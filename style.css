@@ -1,0 +1,13 @@
+body {
+    margin: 0px;
+    padding: 0px;
+    background-color: gray;
+    overflow: hidden;
+    box-sizing: border-box;
+    overscroll-behavior: none;
+}
+
+/* canvas {
+    border: 1px solid black;
+    background-color: white;
+} */
