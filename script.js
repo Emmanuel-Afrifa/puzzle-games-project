@@ -27,23 +27,75 @@ img.src = "./pic.jpg";
 window.addEventListener('load', onload);
 
 function onload(){
+    const gameDifficulty = document.getElementById('game-difficulty');
+    // set game play level 
+    gameDifficulty.addEventListener('click', (event) => {
+        const selectedLevel = gameDifficulty[gameDifficulty.selectedIndex].value;
+        gamePlayDifficulty(gameDifficulty.value);
+        console.log(SIZE.row, SIZE.col)
+    })
+
+    const startButton = document.getElementById('start-game-button');
+    startButton.addEventListener('click', startGame);
+
+    // startGame();
+}
+
+
+
+function startGame(){
     CANVAS = document.getElementById("rootCanvas");
     CONTEXT = CANVAS.getContext('2d');
-    // CONTEXT.shadowOffsetY = 20;
-    // CONTEXT.shadowOffsetX = 20;
-    // CONTEXT.shadowBlur = 1;
-    // CONTEXT.shadowColor = "black"
-    // CONTEXT.textAlign = 'center';
-    // CONTEXT.fillStyle = "white";
+
+    const canvasDisplay = document.getElementById('rootCanvas')
+    // Showing the Game itself
+    canvasDisplay.style.display = 'block';
+    const startDisplay = document.getElementById('main-container');
+    // Hiding the start Page
+    startDisplay.style.display = 'none';
+
+
 
     pieceMovements();
-
     resizeHandler();
     // Preserving aspect ratio of the image
     initializePieces(SIZE.row, SIZE.col);
     window.addEventListener('resize', resizeHandler);
     randomizePieces();
     updateCanvas();
+}
+
+function gamePlayDifficulty(level){
+    switch(level){
+        case 'very-easy':
+            SIZE.row = 2;
+            SIZE.col = 2;
+            break;
+        case 'easy': 
+            SIZE.row = 3;
+            SIZE.col = 3;
+            break;
+        case 'regular': 
+            SIZE.row = 4;
+            SIZE.col = 4;
+            break;
+        case 'intermediate': 
+            SIZE.row = 5;
+            SIZE.col = 5;
+            break;
+        case 'hard': 
+            SIZE.row = 6;
+            SIZE.col = 6;
+            break;
+        case 'very-hard': 
+            SIZE.row = 7;
+            SIZE.col = 7;
+            break;
+        case 'legend': 
+            SIZE.row = 8;
+            SIZE.col = 8;
+            break;
+    }
 }
 
 function resizeHandler(){
@@ -111,18 +163,13 @@ function randomizePieces(){
     let topStartX = CANVAS.width - CANVAS.width*0.9;
     let topStartY = SIZE.y;
     const totalPieces = SIZE.row * SIZE.col;
-    console.log(CANVAS.width/pieceWidth)
 
     const topBottomWidth = (CANVAS.width - 2*topStartX);
-    console.log(pieceWidth, CANVAS.width, totalPieces)
     const leftRightWidth = SIZE.height;
 
     // numPiecesTop = Math.floor((rightStartPos - leftStartPos + pieceWidth)/pieceWidth);
     numPiecesTop = Math.floor(topBottomWidth/(pieceWidth + 5));
     numPiecesLeft = Math.floor( leftRightWidth / (pieceHeight + 5) );
-    
-    console.log(numPiecesLeft)
-
 
     // let offsetX = (topBottomWidth - numPiecesTop*pieceWidth)/(numPiecesTop-1);
     // let offsetY = (leftRightWidth - numPiecesLeft*pieceHeight) / (numPiecesLeft - 1);
@@ -181,8 +228,8 @@ function randomizePieces(){
                     leftOverPiecesIndex,
                     topStartY,
                     pieceHeight,
-                    leftStartPos - 10 - pieceWidth,
-                    rightStartPos + 10 + pieceWidth,
+                    leftStartPos - 8 - pieceWidth,
+                    rightStartPos + 8 + pieceWidth,
                 )
             }
             allPieces.push(coords);
@@ -191,7 +238,7 @@ function randomizePieces(){
     }
     
 
-    console.log(allPieces.length, totalPieces)
+    // console.log(allPieces.length, totalPieces)
 
     let count = 0
     for (let i=0; i<PIECES.length; i++){
@@ -208,6 +255,7 @@ function randomizePieces(){
 
         PIECES[i].x = loc.x;
         PIECES[i].y = loc.y;
+        PIECES[i].correct = false;
     }
 }
 
@@ -215,7 +263,6 @@ function xOffset(leftOverPiecesIndex, topStartY, pieceHeight, leftOffset, rightO
     const isLeft = leftOverPiecesIndex % 2 == 0;
     const xCoord = isLeft ? leftOffset : rightOffset;
     const yCoord = topStartY + Math.floor(leftOverPiecesIndex / 2)*(pieceHeight + 5);
-    console.log(yCoord)
     return [xCoord, yCoord]
 
 }
@@ -231,7 +278,7 @@ function pieceMovements(){
 
 function mouseDownEvent(event){
     PIECE_SELECTED = getPressedPiece(event);
-    if (PIECE_SELECTED != null){
+    if (PIECE_SELECTED != null && !PIECE_SELECTED.inPlace){
         const pieceIndex = PIECES.indexOf(PIECE_SELECTED);
         if (pieceIndex > -1){
             PIECES.splice(pieceIndex, 1);
@@ -245,7 +292,7 @@ function mouseDownEvent(event){
 }
 
 function mouseMoveEvent(event){
-    if (PIECE_SELECTED != null){
+    if (PIECE_SELECTED != null && !PIECE_SELECTED.inPlace){
         PIECE_SELECTED.x = event.x - PIECE_SELECTED.offset.x;
         PIECE_SELECTED.y = event.y - PIECE_SELECTED.offset.y;
     }
@@ -256,6 +303,9 @@ function mouseUpEvent(){
     if (PIECE_SELECTED != null){
         if (PIECE_SELECTED.isClose()){
             PIECE_SELECTED.snapInPlace();
+            if (gameComplete(PIECE_SELECTED)){
+                console.log('Well Done')
+            }
         }
     }
     updateCanvas();
@@ -301,6 +351,8 @@ class Piece{
         this.y = SIZE.y + this.height*this.rowIndex;
         this.correctX = this.x;
         this.correctY = this.y;
+        this.inPlace = false;
+        this.correct = true;
     }
 
     // Function to draw/cut pieces
@@ -332,11 +384,24 @@ class Piece{
         }
         return false;
     }
+
+    // Snapping the pie to its correct position when it's near it.
     snapInPlace(){
         this.x = this.correctX;
         this.y = this.correctY;
+        this.inPlace = true;
+        this.correct = true;
     }
 
+}
+
+function gameComplete(){
+    for (let i=0; i<PIECES.length; i++){
+        if (PIECES[i].correct == false){
+            return false;
+        }
+    }
+    return true;
 }
 
 function distance(point1, point2){
