@@ -18,12 +18,22 @@ let RIGHT_PLANE = null;
 const PIECE_OFFSET = 20;
 let START_TIME = null;
 let END_TIME = null;
+let IMAGE_SELECTED = null;
 
+// Fetching the images
+const images = [
+    "./pic.jpg", 
+    "./_RAS0517.JPG", 
+    "./pic.jpg", 
+    "./_RAS0517.JPG",
+    "./pic.jpg", 
+    "./_RAS0517.JPG",
+    "./pic.jpg", 
+    "./_RAS0517.JPG" ]
 
 const img = new Image();
 img.setAttribute('crossOrigin', 'anonymous')
-img.src = "./pic.jpg";
-
+// img.src = "./pic.jpg";
 
 window.addEventListener('load', onload);
 
@@ -31,11 +41,22 @@ function onload(){
 
     END_TIME = null;
     START_TIME = null;
+    
 
     const gameDifficulty = document.getElementById('game-difficulty');
     gameDifficulty.value = 'very-easy'
     gamePlayDifficulty(gameDifficulty.value);
 
+    // getting the image Viewer div
+    const imageViewer = document.getElementById('image-preview');
+
+    // Placing the images in the image viewer
+    images.forEach(image => {
+        const imagePile = document.createElement('img');
+        imagePile.classList.add('display-images');
+        imagePile.src = image;
+        imageViewer.appendChild(imagePile);
+    })
 
     startGame();
 }
@@ -52,6 +73,21 @@ function startGame(){
     const endPageDisplay = document.getElementById('end-game-page');
     endPageDisplay.style.display = 'none';
 
+    // add a visual effect to an image clicked
+    const imagesDisplayed = document.getElementsByClassName('display-images')
+    for (let i = 0; i < imagesDisplayed.length; i++){
+        imagesDisplayed[i].addEventListener('click', (event) => {
+            if (IMAGE_SELECTED){
+                IMAGE_SELECTED.classList.remove('image-clicked');
+            }
+
+            imagesDisplayed[i].classList.add('image-clicked');
+
+            IMAGE_SELECTED = imagesDisplayed[i];
+        })
+    }
+
+
     const gameDifficulty = document.getElementById('game-difficulty');
     // set game play level 
     gameDifficulty.addEventListener('click', (event) => {
@@ -64,29 +100,50 @@ function startGame(){
 }
 
 function gamePlay(){
-    START_TIME = new Date().getTime()
-    CANVAS = document.getElementById("rootCanvas");
-    CONTEXT = CANVAS.getContext('2d');
+    if (IMAGE_SELECTED ==  null){
+        alert('select an image');
+        return;
+    }
 
-    // Showing the Game itself
-    const canvasDisplay = document.getElementById('rootCanvas')
-    canvasDisplay.style.display = 'block';
+    // // Cleaning the image source
+    // const imgUrl = new URL(IMAGE_SELECTED.src);
+    // const relativeImgPath = imgUrl.pathname;
+    // const cleanImgSrc = relativeImgPath.startsWith('/') ? relativeImgPath.slice(1) : relativeImgPath;
 
-    // Hiding the start Page
-    const startDisplay = document.getElementById('main-container');
-    startDisplay.style.display = 'none';
+    // img.src = cleanImgSrc;
+    img.src = IMAGE_SELECTED.src;
+    console.log(img)
 
-    // Hiding the end page
-    const endPageDisplay = document.getElementById('end-game-page');
-    endPageDisplay.style.display = 'none';
 
-    pieceMovements();
-    resizeHandler();
-    // Preserving aspect ratio of the image
-    initializePieces(SIZE.row, SIZE.col);
-    window.addEventListener('resize', resizeHandler);
-    randomizePieces();
-    updateCanvas();
+    img.onload = () => {
+        START_TIME = new Date().getTime()
+        CANVAS = document.getElementById("rootCanvas");
+        CONTEXT = CANVAS.getContext('2d');
+
+        // Showing the Game itself
+        const canvasDisplay = document.getElementById('rootCanvas')
+        canvasDisplay.style.display = 'block';
+
+        // Hiding the start Page
+        const startDisplay = document.getElementById('main-container');
+        startDisplay.style.display = 'none';
+
+        // Hiding the end page
+        const endPageDisplay = document.getElementById('end-game-page');
+        endPageDisplay.style.display = 'none';
+
+        pieceMovements();
+        resizeHandler();
+        // Preserving aspect ratio of the image
+        initializePieces(SIZE.row, SIZE.col);
+        window.addEventListener('resize', resizeHandler);
+        randomizePieces();
+        updateCanvas();
+    }
+
+    img.onerror = () => {
+        alert('Failed to load the selected image. Please try again.')
+    }
 
 }
 
@@ -145,6 +202,8 @@ function resizeHandler(){
 
 function updateCanvas(){
     CONTEXT.clearRect(0,0, CANVAS.width, CANVAS.height);
+
+    console.log(img.src)
 
     CONTEXT.globalAlpha = 0.3;
     CONTEXT.drawImage(img, SIZE.x, SIZE.y, SIZE.width, SIZE.height);
@@ -312,27 +371,45 @@ function randomizePieces(){
             leftOverPiecesIndex += 1;
         }
     }
-    
 
-    // console.log(allPieces.length, totalPieces)
+    // let count = 0
+    // for (let i=0; i<PIECES.length; i++){
+    //     count += 1;
+    //     let ind = Math.floor(Math.random() * allPieces.length);
+    //     rm_piece = allPieces.splice(ind, 1)[0]
 
-    let count = 0
-    for (let i=0; i<PIECES.length; i++){
-        count += 1;
-        let ind = Math.floor(Math.random() * allPieces.length);
-        rm_piece = allPieces.splice(ind, 1)[0]
+    //     let loc = {
+    //             x: rm_piece[0],
+    //             y: rm_piece[1]
+    //         }
+
+    //     PIECES[i].x = loc.x;
+    //     PIECES[i].y = loc.y;
+    //     PIECES[i].correct = false;
+    // }
+
+    const maskPieces = [...Array(PIECES.length).keys()]
+    for (let i=0; i<allPieces.length; i++){
+        if ((i+1) > PIECES.length){
+            break;
+        }
+        const ind = Math.floor(Math.random() * maskPieces.length);
+        let rm_piece = allPieces[i];
 
         let loc = {
-                // x: Math.random()*(CANVAS.width - PIECES[i].width),
-                // y: Math.random()*(CANVAS.height - PIECES[i].height)
-                x: rm_piece[0],
-                y: rm_piece[1]
-            }
+            x: rm_piece[0],
+            y: rm_piece[1]
+        };
 
-        PIECES[i].x = loc.x;
-        PIECES[i].y = loc.y;
-        PIECES[i].correct = false;
+        PIECES[maskPieces[ind]].x = loc.x;
+        PIECES[maskPieces[ind]].y = loc.y;
+        PIECES[maskPieces[ind]].correct = false;
+
+        maskPieces.splice(ind, 1);
+
     }
+
+    
 }
 
 function xOffset(leftOverPiecesIndex, topStartY, pieceHeight, leftOffset, rightOffset, verticalOffset){
@@ -440,6 +517,9 @@ function gameOver(){
     const endPageDisplay = document.getElementById('end-game-page');
     // Showing the end page
     endPageDisplay.style.display = 'flex';
+
+    const endGameImage = document.getElementById('end-game-image');
+    endGameImage.src = img.src;
 
     const nextGameButton = document.getElementById('next-game-button');
     nextGameButton.addEventListener('click', onload);
